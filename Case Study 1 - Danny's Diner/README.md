@@ -95,6 +95,17 @@ The final `members` table captures the `join_date` when a `customer_id` joined t
 :exclamation: Due to data privacy issues, only a sample of the overall customer data is provided. The SQL queries in this case study are designed to help Danny answer key business questions and uncover insights from the available data.
 
 ## Business Questions
+1. What is the total amount each customer spent at the restaurant?
+2. How many days has each customer visited the restaurant?
+3. What was the first item from the menu purchased by each customer?
+4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+5. Which item was the most popular for each customer?
+6. Which item was purchased first by the customer after they became a member?
+7. Which item was purchased just before the customer became a member?
+8. What is the total items and amount spent for each member before they became a member?
+9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+
 
 ## Bonus Questions
 
@@ -278,9 +289,134 @@ ORDER BY customer_id;
 
 **Result:**
 
-### Join All
+### Join All The Things
+
+**Query:**
+```
+WITH customer_orders AS (
+    SELECT 
+        sales.*,
+        members.join_date,
+        menu.product_name,
+        menu.price
+    FROM sales
+    LEFT JOIN members 
+        ON sales.customer_id = members.customer_id
+    JOIN menu 
+        ON menu.product_id = sales.product_id
+),
+member_status AS (
+    SELECT
+        *,
+        CASE 
+            WHEN DATEDIFF(day, join_date, order_date) >= 0 THEN 'Y'
+            ELSE 'N'
+        END AS member
+    FROM customer_orders
+)
+SELECT 
+    customer_id,
+    order_date,
+    product_name,
+    price,
+    member
+FROM member_status
+```
+
+**Result:**
+| customer_id | order_date | product_name | price | member |
+|----------|------------|-------|------:|:---:|
+| A        | 2021-01-01 | curry | 15    | N   |
+| A        | 2021-01-01 | sushi | 10    | N   |
+| A        | 2021-01-07 | curry | 15    | Y   |
+| A        | 2021-01-10 | ramen | 12    | Y   |
+| A        | 2021-01-11 | ramen | 12    | Y   |
+| A        | 2021-01-11 | ramen | 12    | Y   |
+| B        | 2021-01-01 | curry | 15    | N   |
+| B        | 2021-01-02 | curry | 15    | N   |
+| B        | 2021-01-04 | sushi | 10    | N   |
+| B        | 2021-01-11 | sushi | 10    | Y   |
+| B        | 2021-01-16 | ramen | 12    | Y   |
+| B        | 2021-02-01 | ramen | 12    | Y   |
+| C        | 2021-01-01 | ramen | 12    | N   |
+| C        | 2021-01-01 | ramen | 12    | N   |
+| C        | 2021-01-07 | ramen | 12    | N   |
+
 
 ### Rank 
 
+**Query:**
 
-## Conclusion and Recommendations
+```
+
+WITH customer_orders AS (
+    SELECT 
+        sales.*,
+        members.join_date,
+        menu.product_name,
+        menu.price
+    FROM sales
+    LEFT JOIN members 
+        ON sales.customer_id = members.customer_id
+    JOIN menu 
+        ON menu.product_id = sales.product_id
+),
+member_status AS (
+    SELECT
+        *,
+        CASE 
+            WHEN DATEDIFF(day, join_date, order_date) >= 0 THEN 'Y'
+            ELSE 'N'
+        END AS member
+    FROM customer_orders
+),
+ranked_members AS (
+    SELECT
+        *,
+        CASE
+            WHEN member = 'Y' THEN
+                RANK() OVER (
+                    PARTITION BY customer_id, member
+                    ORDER BY order_date
+                )
+        END AS ranking
+    FROM member_status
+)
+SELECT 
+    customer_id,
+    order_date,
+    product_name,
+    price,
+    member,
+    ranking
+FROM ranked_members
+```
+
+**Result:**
+| customer_id | order_date | product_name | price | member | ranking |
+|---|---|----|------:|:---:|:---|
+| A        | 2021-01-01 | curry | 15    | N   | NULL |
+| A        | 2021-01-01 | sushi | 10    | N   | NULL |
+| A        | 2021-01-07 | curry | 15    | Y   | 1    |
+| A        | 2021-01-10 | ramen | 12    | Y   | 2    |
+| A        | 2021-01-11 | ramen | 12    | Y   | 3    |
+| A        | 2021-01-11 | ramen | 12    | Y   | 3    |
+| B        | 2021-01-01 | curry | 15    | N   | NULL |
+| B        | 2021-01-02 | curry | 15    | N   | NULL |
+| B        | 2021-01-04 | sushi | 10    | N   | NULL |
+| B        | 2021-01-11 | sushi | 10    | Y   | 1    |
+| B        | 2021-01-16 | ramen | 12    | Y   | 2    |
+| B        | 2021-02-01 | ramen | 12    | Y   | 3    |
+| C        | 2021-01-01 | ramen | 12    | N   | NULL |
+| C        | 2021-01-01 | ramen | 12    | N   | NULL |
+| C        | 2021-01-07 | ramen | 12    | N   | NULL |
+
+## Insights and Recommendations
+
+:exclamation:**Ramen is the most popular item on the menu**, accounting for 8 out of 15 purchases. It is a favorite by both members (A and B) and non-members (C). *Danny should keep ramen on the menu and may consider expanding the offering by introducing different ramen variations.*
+
+:exclamation:**Curry, the most expensive product, was only purchased 4 times**, which may indicate low demand for its higher price point. *Danny may want to review its pricing, portion, or overall positioning before deciding whether to keep it on the menu.* 
+
+:exclamation:**Membership behavior showed that customers tend to make a few purchases before joining the loyalty program**. After joining, customers continue to make purchases, indicating sustained engagement with the business. *Danny may seek to encourage first-time customers to join the loyalty program through introductory promotions or discounts.*
+
+
