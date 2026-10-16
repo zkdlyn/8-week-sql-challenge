@@ -5,9 +5,12 @@
 - [Dataset](#dataset)
 - [Data Cleaning](#data-cleaning-and-preprocessing)
 - [Case Study](#case-study)
+  - [Pizza Metrics](#a-pizza-metrics)
+  - [Runner and Customer Experience](#b-runner-and-customer-experience)
+  - [Ingredient Optimization](#c-ingredient-optimisation)
 
 ## Problem Statement
-Danny started recruiting "runners" to deliver pizza from Pizza Runner Headquarters and commissioned an app where customers can place their orders. To better direct his runners and optimize Pizza Runner's operations he collected data.
+Danny started recruiting "runners" to deliver pizzas from Pizza Runner Headquarters and commissioned an app where customers can place their orders. To gain insights into business performance and identify opportunities for improvement, he collected data on menu information, order details and runner performance for analysis.
 
 ## Dataset
 We are provided six tables for this case study: runners, customer_orders, runner_orders, pizza_names, pizza_recipes, and pizza_toppings. Their relationships are shown in the entity relationship diagram below.
@@ -211,7 +214,8 @@ FROM runner_orders
 ```
 
 ## Case Study
-This case study is organised into several key areas of focus, including pizza metrics, runner and customer experience, ingredient optimisation, pricing and ratings, and other data manipulation challenges.
+This case study is divided into several key areas of focus including pizza metrics, runner and customer experience, ingredient optimisation, pricing and ratings, and other data manipulation challenges.
+
 ### A. Pizza Metrics
 
 #### 1. How many pizzas were ordered?
@@ -228,7 +232,6 @@ FROM #customer_orders_cleaned
 | --- |
 | 14 |
 
-*There were a total of 14 pizzas ordered.*
 
 #### 2. How many unique customer orders were made?
 **Query:**
@@ -243,7 +246,6 @@ FROM #customer_orders_cleaned
 | --- |
 | 10 |
 
-*There were 10 unique customer orders.*
 
 #### 3. How many successful orders were delivered by each runner?
 
@@ -258,8 +260,6 @@ WHERE cancellation IS NULL
 | successful_deliveries |
 | --- |
 | 8 |
-
-*There were 8 successful deliveries out of 10 total orders.*
 
 
 #### 4. How many of each type of pizza was delivered?
@@ -284,26 +284,30 @@ GROUP BY CAST(p.pizza_name AS VARCHAR(20))
 | Meat Lovers | 9 |
 | Vegetarian | 3 |
 
-*There were 9 Meat Lovers pizzas and 3 Vegetarian pizzas delivered.*
+
 
 #### 5. How many Vegetarian and Meatlovers were ordered by each customer?
 **Query:**
 ```
 SELECT 
-	CAST(p.pizza_name AS VARCHAR(20)) AS pizza_name,
-	COUNT(*) AS pizzas_ordered
-FROM #customer_orders_cleaned as co 
+    customer_id,
+    COUNT(CASE WHEN CAST(p.pizza_name AS VARCHAR(20)) = 'Meatlovers' THEN 1 END) AS Meatlovers,
+    COUNT(CASE WHEN CAST(p.pizza_name AS VARCHAR(20)) = 'Vegetarian' THEN 1 END) AS Vegetarian
+FROM #customer_orders_cleaned AS co
 JOIN pizza_names as p 
 ON co.pizza_id = p.pizza_id
-GROUP BY CAST(p.pizza_name AS VARCHAR(20))
+GROUP BY customer_id
 ```
 **Result:**
-| pizza_name | pizzas_delivered |
-| --- | --- |
-| Meat Lovers | 10 |
-| Vegetarian | 4 |
+| customer_id | Meatlovers | Vegetarian |
+| --- | --- | --- |
+| 101 | 2 | 1 |
+| 102 | 2 | 1 |
+| 103 | 3 | 1 |
+| 104 | 3 | 0 |
+| 105 | 0 | 1 |
 
-*Customers ordered Meat Lovers 10 times and Vegetarian 4 times.*
+
 
 #### 6. What was the maximum number of pizzas delivered in a single order?
 **Query:**
@@ -322,8 +326,6 @@ ORDER BY pizzas_per_order DESC
 | order_id | pizzas_per_order |
 | :---: | --- |
 | 4 | 3 |
-
-*The maximum number of pizzas delivered in a single order was 3.*
 
 #### 7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
 
@@ -412,7 +414,15 @@ ORDER BY DATEPART(weekday, order_time)
 | Saturday | 5 |
 
 > #### :bulb: Important Findings
-> - 
+> - Customers have placed 10 unique orders and ordered a total of 14 pizzas.
+> Out of 10 unique orders, 8 were successful with 1 cancellation by the restaurant and 1 by the customer.
+> - Meatlovers is the more popular pizza on the menu, delivered 9 times compared to Vegetarian which was only delivered 3 times.
+> - Individually, more customers ordered Meatlovers more than Vegetarian. Only 1 customer preferred the Vegetarian option and did not order Meatlovers.
+> The maximum number of pizzas in a single order was 3
+> Customers who ask for changes are typically consistent.
+> Customers typically ordered later in the day between 1 p.m. and 12 a.m.
+> The volume of pizzas ordered peaked on Wednesdays and Saturdays with 5 orders each.
+> 
 
 ### B. Runner and Customer Experience
 
@@ -445,13 +455,17 @@ WITH customer_orders_cte AS (
     GROUP BY order_id
 )
 SELECT
-	runner_id,
-    AVG(DATEDIFF(MINUTE, co.order_time, ro.pickup_time)) AS avg_pickup_time
-FROM #runner_orders_cleaned AS ro
-JOIN customer_orders_cte AS co
+	r.runner_id,
+    AVG(DATEDIFF(
+        MINUTE, co.order_time, ro.pickup_time)
+        ) AS avg_pickup_time
+FROM runners AS r
+LEFT JOIN #runner_orders_cleaned AS ro
+ON r.runner_id = ro.runner_id
+LEFT JOIN customer_orders_cte AS co
 ON ro.order_id = co.order_id
 WHERE cancellation IS NULL
-GROUP BY runner_id
+GROUP BY r.runner_id
 ```
 
 **Result:**
@@ -460,6 +474,7 @@ GROUP BY runner_id
 | 1 | 14 |
 | 2 | 20 |
 | 3 | 10 |
+| 4 | NULL |
 
 #### 3. Is there any relationship between the number of pizzas and how long the order takes to prepare?
 **Query:**
@@ -552,7 +567,8 @@ WITH runner_speed_cte AS (
     SELECT DISTINCT
         runner_id,
         co.order_id,
-        duration
+        duration,
+        distance
     FROM #runner_orders_cleaned AS ro
     JOIN #customer_orders_cleaned AS co
         ON co.order_id = ro.order_id
@@ -560,39 +576,50 @@ WITH runner_speed_cte AS (
 )
 SELECT
     runner_id,
-    ROUND(AVG(duration), 2) AS avg_duration
+    order_id,
+    ROUND(
+        CAST(distance AS FLOAT) / NULLIF(
+            CAST(duration AS FLOAT), 0) * 60,
+        2
+    ) AS speed_kmh
 FROM runner_speed_cte
-GROUP BY runner_id
-ORDER BY runner_id
+ORDER BY runner_id, order_id
 ```
 
 **Result:**
-| runner_id | avg_duration |
-| :---: | --- |
-| 1 | 22.25 |
-| 2 | 26.67 |
-| 3 | 15.00 |
+| runner_id | order_id | speed_kmh |
+|-----------|----------|-----------|
+| 1         | 1        | 37.5      |
+| 1         | 2        | 44.44     |
+| 1         | 3        | 40.2      |
+| 1         | 10       | 60        |
+| 2         | 4        | 35.1      |
+| 2         | 7        | 60        |
+| 2         | 8        | 93.6      |
+| 3         | 5        | 40        |
 
 #### 7. What is the successful delivery percentage for each runner?
 **Query:**
 ```
 WITH success_count_cte AS (
 SELECT
-    ro.runner_id,
+    r.runner_id,
     CAST(SUM(CASE 
-            WHEN cancellation IS NULL 
+            WHEN co.order_id IS NOT NULL AND cancellation IS NULL 
             THEN 1 ELSE 0 END) 
             AS FLOAT) AS success,
-    COUNT(*) AS assigned_deliveries
+    CAST(SUM(CASE 
+            WHEN co.order_id IS NOT NULL THEN 1 ELSE 0 END) AS FLOAT) AS assigned_deliveries
 FROM #runner_orders_cleaned AS ro
 JOIN #customer_orders_cleaned AS co
 ON ro.order_id = co.order_id
-GROUP BY ro.runner_id
+RIGHT JOIN runners AS r
+ON ro.runner_id = r.runner_id
+GROUP BY r.runner_id
 )
-
 SELECT
     *,
-    ROUND((success /assigned_deliveries) * 100 , 2) AS success_perc
+    ROUND((success /NULLIF(assigned_deliveries, 0)) * 100 , 2) AS success_perc
 FROM success_count_cte 
 ```
 
@@ -602,13 +629,13 @@ FROM success_count_cte
 | 1 | 6 | 6 | 100 |
 | 2 | 5 | 6 | 83.33 |
 | 3 | 1 | 2 | 50 |
+| 4 | 0 | 0 | NULL | 
 
-> #### :bulb: Important Findings
-> - 
+
 
 ### C. Ingredient Optimisation
 
-#### What are the standard ingredients for each pizza?
+#### 1. What are the standard ingredients for each pizza?
 **Query:**
 ```
 SELECT
@@ -629,7 +656,7 @@ GROUP BY pn.pizza_id, CAST(pizza_name AS VARCHAR(MAX))
 | Vegetarian | Cheese, Mushrooms, Onions, Peppers, Tomatoes, Tomato Sauce |
 
 
-#### What was the most commonly added extra?
+#### 2. What was the most commonly added extra?
 
 **Query:**
 ```
@@ -651,31 +678,71 @@ ORDER BY count DESC
 ```
 
 **Result:**
+| topping_name | count |
+| --- | --- |
+| Bacon | 4 | 
 
 
-####
+#### 3. What was the most common exclusion?
 
 **Query:**
 ```
-WITH extras_cte AS(
+WITH exclusions_cte AS(
     SELECT 
         order_id,
-        pizza_id,
-        STRING_AGG(CAST(t.topping_name AS VARCHAR(MAX)), ', ') AS extras
-    FROM #customer_orders_cleaned c
-    CROSS APPLY STRING_SPLIT(extras, ',') AS s
-    JOIN pizza_toppings AS t 
-        ON TRIM(s.value) = t.topping_id
-    GROUP BY order_id, pizza_id
-), exclusions_cte AS(
-    SELECT 
-        order_id,
-        pizza_id,
-        STRING_AGG(CAST(t.topping_name AS VARCHAR(MAX)), ', ') AS exclusions
+        topping_name
     FROM #customer_orders_cleaned c
     CROSS APPLY STRING_SPLIT(exclusions, ',') AS s
     JOIN pizza_toppings AS t 
         ON TRIM(s.value) = t.topping_id
+)
+SELECT TOP 1
+    CAST(topping_name AS VARCHAR(MAX)) AS topping_name,
+    COUNT(*) AS count
+FROM exclusions_cte 
+GROUP BY CAST(topping_name AS VARCHAR(MAX))
+ORDER BY count DESC
+```
+
+
+**Result:**
+| topping_name | count |
+| --- | --- |
+| Cheese | 4 | 
+
+#### 4. Generate an order item for each record in the customers_orders table in the format of one of the following: (Meat Lovers; Meat Lovers - Exclude Beef; Meat Lovers - Extra Bacon; Meat Lovers - Exclude Cheese, Bacon - Extra Mushroom, Peppers)
+
+**Query:**
+```
+
+WITH extras_cte AS (
+    SELECT order_id, pizza_id,
+        STRING_AGG(CAST(d.topping_name AS VARCHAR(MAX)), ', ') AS extras
+    FROM (
+        SELECT DISTINCT 
+            co.order_id, 
+            co.pizza_id, 
+            CAST(t.topping_name AS VARCHAR(MAX)) AS topping_name
+        FROM #customer_orders_cleaned co
+        CROSS APPLY STRING_SPLIT(co.extras, ',') s
+        JOIN pizza_toppings t
+            ON TRY_CAST(TRIM(s.value) AS INT) = t.topping_id
+    ) d
+    GROUP BY order_id, pizza_id
+),
+exclusions_cte AS (
+    SELECT order_id, pizza_id,
+        STRING_AGG(CAST(d.topping_name AS VARCHAR(MAX)), ', ') AS exclusions
+    FROM (
+        SELECT DISTINCT 
+            co.order_id, 
+            co.pizza_id, 
+            CAST(t.topping_name AS VARCHAR(MAX)) AS topping_name
+        FROM #customer_orders_cleaned co
+        CROSS APPLY STRING_SPLIT(co.exclusions, ',') s
+        JOIN pizza_toppings t
+            ON TRY_CAST(TRIM(s.value) AS INT) = t.topping_id
+    ) d
     GROUP BY order_id, pizza_id
 )
 SELECT
@@ -683,18 +750,42 @@ SELECT
     co.customer_id,
     co.order_time,
     CONCAT(
-        CAST(pn.pizza_name AS VARCHAR(MAX)),
+        pn.pizza_name,
         CASE WHEN excl.exclusions IS NOT NULL
             THEN ' - Exclude ' + excl.exclusions ELSE '' END,
         CASE WHEN extra.extras IS NOT NULL
             THEN ' - Extra ' + extra.extras ELSE '' END
     ) AS order_details
-FROM #customer_orders_cleaned AS co
-LEFT JOIN extras_cte AS extra
+FROM #customer_orders_cleaned co
+LEFT JOIN extras_cte extra
     ON co.order_id = extra.order_id
-LEFT JOIN exclusions_cte AS excl
-    ON excl.order_id = co.order_id
-JOIN pizza_names as pn
-    ON co.pizza_id = pn.pizza_id
-
+    AND co.pizza_id = extra.pizza_id
+LEFT JOIN exclusions_cte excl
+    ON co.order_id = excl.order_id
+    AND co.pizza_id = excl.pizza_id
+JOIN pizza_names pn
+    ON co.pizza_id = pn.pizza_id;
 ```
+
+**Result:**
+| order_id | customer_id | order_time                | order_details                                                        |
+|----------|-------------|---------------------------|----------------------------------------------------------------------|
+| 1        | 101         | 2020-01-01 18:05:02.0000000 | Meatlovers                                                           |
+| 2        | 101         | 2020-01-01 19:00:52.0000000 | Meatlovers                                                           |
+| 3        | 102         | 2020-01-02 23:51:23.0000000 | Meatlovers                                                           |
+| 3        | 102         | 2020-01-02 23:51:23.0000000 | Vegetarian                                                           |
+| 4        | 103         | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese, Cheese                                  |
+| 4        | 103         | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese                                          |
+| 4        | 103         | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese, Cheese                                  |
+| 4        | 103         | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese                                          |
+| 4        | 103         | 2020-01-04 13:23:46.0000000 | Vegetarian - Exclude Cheese, Cheese                                  |
+| 4        | 103         | 2020-01-04 13:23:46.0000000 | Vegetarian - Exclude Cheese                                          |
+| 5        | 104         | 2020-01-08 21:00:29.0000000 | Meatlovers - Extra Bacon                                             |
+| 6        | 101         | 2020-01-08 21:03:13.0000000 | Vegetarian                                                           |
+| 7        | 105         | 2020-01-08 21:20:29.0000000 | Vegetarian - Extra Bacon                                             |
+| 8        | 102         | 2020-01-09 23:54:33.0000000 | Meatlovers                                                           |
+| 9        | 103         | 2020-01-10 11:22:59.0000000 | Meatlovers - Exclude Cheese - Extra Bacon, Chicken                   |
+| 10       | 104         | 2020-01-11 18:34:49.0000000 | Meatlovers - Exclude BBQ Sauce, Mushrooms - Extra Bacon, Cheese      |
+| 10       | 104         | 2020-01-11 18:34:49.0000000 | Meatlovers - Exclude BBQ Sauce, Mushrooms - Extra Bacon, Cheese      |
+
+#### 5. Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients (For example: "Meat Lovers: 2xBacon, Beef, ... , Salami")
