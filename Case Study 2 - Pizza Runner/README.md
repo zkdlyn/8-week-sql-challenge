@@ -8,6 +8,7 @@
   - [Pizza Metrics](#a-pizza-metrics)
   - [Runner and Customer Experience](#b-runner-and-customer-experience)
   - [Ingredient Optimization](#c-ingredient-optimisation)
+  - [Pricing and Ratings](#d-pricing-and-ratings)
 
 ## Problem Statement
 Danny started recruiting "runners" to deliver pizzas from Pizza Runner Headquarters and commissioned an app where customers can place their orders. To gain insights into business performance and identify opportunities for improvement, he collected data on menu information, order details and runner performance for analysis.
@@ -414,15 +415,15 @@ ORDER BY DATEPART(weekday, order_time)
 | Saturday | 5 |
 
 > #### :bulb: Important Findings
-> - Customers have placed 10 unique orders and ordered a total of 14 pizzas.
-> Out of 10 unique orders, 8 were successful with 1 cancellation by the restaurant and 1 by the customer.
-> - Meatlovers is the more popular pizza on the menu, delivered 9 times compared to Vegetarian which was only delivered 3 times.
+> - Customers have placed **10 unique order**s and ordered a total of **14 pizzas**.
+> Out of 10 unique orders, **8 deliveries were successful** with 1 cancellation by the restaurant and 1 by the customer.
+> - **Meatlovers** is the more popular pizza on the menu, **delivered 9 times** compared to Vegetarian which was only delivered 3 times.
 > - Individually, more customers ordered Meatlovers more than Vegetarian. Only 1 customer preferred the Vegetarian option and did not order Meatlovers.
-> The maximum number of pizzas in a single order was 3
-> Customers who ask for changes are typically consistent.
-> Customers typically ordered later in the day between 1 p.m. and 12 a.m.
-> The volume of pizzas ordered peaked on Wednesdays and Saturdays with 5 orders each.
-> 
+> - There was a **maximum number of 3 pizzas in a single order**.
+> - Customers who ask for changes are typically consistent.
+> - Customers typically ordered later in the day **between 1 p.m. and 12 a.m.**
+> - The volume of pizzas ordered **peaked on Wednesdays and Saturdays** with 5 orders each.
+
 
 ### B. Runner and Customer Experience
 
@@ -631,6 +632,14 @@ FROM success_count_cte
 | 3 | 1 | 2 | 50 |
 | 4 | 0 | 0 | NULL | 
 
+> #### :bulb: Important Findings
+> - **4 runners signedup** across three weeks, with the highest number (2) in Week 1.
+> - **Average pickup times ranged from 10 to 20 minutes**, with Runner 3 being the fastest.
+> - **Average preparation time increased with order size**, from 12 minutes for 1 pizza to 30 minutes for 3 pizzas.
+> - Distances ranged from **10–25 km**, while successful deliveries took **10–40 minutes**. 
+> - Recorded **speeds ranged from 35.1 to 93.6 km/h**.
+> - Runner 1 achieved 100%, Runner 2 achieved 83.33%, and Runner 3 achieved 50% success rates in deliveries. Runner 4 had no assigned deliveries.
+
 
 
 ### C. Ingredient Optimisation
@@ -714,41 +723,39 @@ ORDER BY count DESC
 
 **Query:**
 ```
-
-WITH extras_cte AS (
-    SELECT order_id, pizza_id,
-        STRING_AGG(CAST(d.topping_name AS VARCHAR(MAX)), ', ') AS extras
-    FROM (
-        SELECT DISTINCT 
-            co.order_id, 
-            co.pizza_id, 
-            CAST(t.topping_name AS VARCHAR(MAX)) AS topping_name
-        FROM #customer_orders_cleaned co
-        CROSS APPLY STRING_SPLIT(co.extras, ',') s
-        JOIN pizza_toppings t
-            ON TRY_CAST(TRIM(s.value) AS INT) = t.topping_id
-    ) d
-    GROUP BY order_id, pizza_id
+WITH orders AS (
+    SELECT *,
+        ROW_NUMBER() OVER (
+            ORDER BY order_id, customer_id, pizza_id,
+                     order_time, exclusions, extras
+        ) AS row_id
+    FROM #customer_orders_cleaned
+),
+extras_cte AS (
+    SELECT
+        o.row_id,
+        STRING_AGG(CAST(t.topping_name AS VARCHAR(MAX)), ', ') AS extras
+    FROM orders o
+    CROSS APPLY STRING_SPLIT(o.extras, ',') s
+    JOIN pizza_toppings t
+        ON TRY_CAST(TRIM(s.value) AS INT) = t.topping_id
+    GROUP BY o.row_id
 ),
 exclusions_cte AS (
-    SELECT order_id, pizza_id,
-        STRING_AGG(CAST(d.topping_name AS VARCHAR(MAX)), ', ') AS exclusions
-    FROM (
-        SELECT DISTINCT 
-            co.order_id, 
-            co.pizza_id, 
-            CAST(t.topping_name AS VARCHAR(MAX)) AS topping_name
-        FROM #customer_orders_cleaned co
-        CROSS APPLY STRING_SPLIT(co.exclusions, ',') s
-        JOIN pizza_toppings t
-            ON TRY_CAST(TRIM(s.value) AS INT) = t.topping_id
-    ) d
-    GROUP BY order_id, pizza_id
+    SELECT
+        o.row_id,
+        STRING_AGG(CAST(t.topping_name AS VARCHAR(MAX)), ', ') AS exclusions
+    FROM orders o
+    CROSS APPLY STRING_SPLIT(o.exclusions, ',') s
+    JOIN pizza_toppings t
+        ON TRY_CAST(TRIM(s.value) AS INT) = t.topping_id
+    GROUP BY o.row_id
 )
 SELECT
-    co.order_id,
-    co.customer_id,
-    co.order_time,
+    o.row_id,
+    o.order_id,
+    o.customer_id,
+    o.order_time,
     CONCAT(
         pn.pizza_name,
         CASE WHEN excl.exclusions IS NOT NULL
@@ -756,36 +763,392 @@ SELECT
         CASE WHEN extra.extras IS NOT NULL
             THEN ' - Extra ' + extra.extras ELSE '' END
     ) AS order_details
-FROM #customer_orders_cleaned co
+FROM orders o
 LEFT JOIN extras_cte extra
-    ON co.order_id = extra.order_id
-    AND co.pizza_id = extra.pizza_id
+    ON o.row_id = extra.row_id
 LEFT JOIN exclusions_cte excl
-    ON co.order_id = excl.order_id
-    AND co.pizza_id = excl.pizza_id
+    ON o.row_id = excl.row_id
 JOIN pizza_names pn
-    ON co.pizza_id = pn.pizza_id;
+    ON o.pizza_id = pn.pizza_id
+ORDER BY o.row_id
 ```
 
 **Result:**
-| order_id | customer_id | order_time                | order_details                                                        |
-|----------|-------------|---------------------------|----------------------------------------------------------------------|
-| 1        | 101         | 2020-01-01 18:05:02.0000000 | Meatlovers                                                           |
-| 2        | 101         | 2020-01-01 19:00:52.0000000 | Meatlovers                                                           |
-| 3        | 102         | 2020-01-02 23:51:23.0000000 | Meatlovers                                                           |
-| 3        | 102         | 2020-01-02 23:51:23.0000000 | Vegetarian                                                           |
-| 4        | 103         | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese, Cheese                                  |
-| 4        | 103         | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese                                          |
-| 4        | 103         | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese, Cheese                                  |
-| 4        | 103         | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese                                          |
-| 4        | 103         | 2020-01-04 13:23:46.0000000 | Vegetarian - Exclude Cheese, Cheese                                  |
-| 4        | 103         | 2020-01-04 13:23:46.0000000 | Vegetarian - Exclude Cheese                                          |
-| 5        | 104         | 2020-01-08 21:00:29.0000000 | Meatlovers - Extra Bacon                                             |
-| 6        | 101         | 2020-01-08 21:03:13.0000000 | Vegetarian                                                           |
-| 7        | 105         | 2020-01-08 21:20:29.0000000 | Vegetarian - Extra Bacon                                             |
-| 8        | 102         | 2020-01-09 23:54:33.0000000 | Meatlovers                                                           |
-| 9        | 103         | 2020-01-10 11:22:59.0000000 | Meatlovers - Exclude Cheese - Extra Bacon, Chicken                   |
-| 10       | 104         | 2020-01-11 18:34:49.0000000 | Meatlovers - Exclude BBQ Sauce, Mushrooms - Extra Bacon, Cheese      |
-| 10       | 104         | 2020-01-11 18:34:49.0000000 | Meatlovers - Exclude BBQ Sauce, Mushrooms - Extra Bacon, Cheese      |
+| order\_id | customer\_id | order\_time | order\_details |
+| --- | --- | --- | --- |
+| 1 | 101 | 2020-01-01 18:05:02.0000000 | Meatlovers |
+| 2 | 101 | 2020-01-01 19:00:52.0000000 | Meatlovers |
+| 3 | 102 | 2020-01-02 23:51:23.0000000 | Meatlovers |
+| 3 | 102 | 2020-01-02 23:51:23.0000000 | Vegetarian |
+| 4 | 103 | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese |
+| 4 | 103 | 2020-01-04 13:23:46.0000000 | Meatlovers - Exclude Cheese |
+| 4 | 103 | 2020-01-04 13:23:46.0000000 | Vegetarian - Exclude Cheese |
+| 5 | 104 | 2020-01-08 21:00:29.0000000 | Meatlovers - Extra Bacon |
+| 6 | 101 | 2020-01-08 21:03:13.0000000 | Vegetarian |
+| 7 | 105 | 2020-01-08 21:20:29.0000000 | Vegetarian - Extra Bacon |
+| 8 | 102 | 2020-01-09 23:54:33.0000000 | Meatlovers |
+| 9 | 103 | 2020-01-10 11:22:59.0000000 | Meatlovers - Exclude Cheese - Extra Bacon, Chicken |
+| 10 | 104 | 2020-01-11 18:34:49.0000000 | Meatlovers |
+| 10 | 104 | 2020-01-11 18:34:49.0000000 | Meatlovers - Exclude BBQ Sauce, Mushrooms - Extra Bacon, Cheese | 
 
-#### 5. Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients (For example: "Meat Lovers: 2xBacon, Beef, ... , Salami")
+#### 5. Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table 
+
+**Query:**
+
+```
+WITH orders AS (
+    SELECT *,
+        ROW_NUMBER() OVER (
+            ORDER BY order_id, customer_id, pizza_id,
+                     order_time, exclusions, extras
+        ) AS row_id
+    FROM #customer_orders_cleaned
+),
+pizza_recipes_cte AS (
+    SELECT
+        pn.pizza_id,
+        CAST(pn.pizza_name AS VARCHAR(MAX)) AS pizza_name,
+        TRIM(s.value) AS topping_id,
+        CAST(t.topping_name AS VARCHAR(MAX)) AS topping_name
+    FROM pizza_recipes r
+    CROSS APPLY STRING_SPLIT(
+        CAST(r.toppings AS VARCHAR(MAX)), ','
+    ) s
+    JOIN pizza_names pn
+        ON pn.pizza_id = r.pizza_id
+    JOIN pizza_toppings t
+        ON TRIM(s.value) = t.topping_id
+),
+all_ingredients AS (
+    SELECT
+        co.order_id,
+        co.customer_id,
+        co.pizza_id,
+        co.row_id,
+        CAST(pr.pizza_name AS VARCHAR(MAX)) AS pizza_name,
+        CAST(pr.topping_name AS VARCHAR(MAX)) AS topping_name
+    FROM orders co
+    JOIN pizza_recipes_cte pr
+        ON co.pizza_id = pr.pizza_id
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM STRING_SPLIT(
+            COALESCE(CAST(co.exclusions AS VARCHAR(MAX)), ''), ','
+        ) e
+        WHERE TRIM(e.value) = pr.topping_id
+    )
+
+    UNION ALL
+
+    SELECT
+        co.order_id,
+        co.customer_id,
+        co.pizza_id,
+        co.row_id,
+        CAST(pn.pizza_name AS VARCHAR(MAX)) AS pizza_name,
+        CAST(t.topping_name AS VARCHAR(MAX)) AS topping_name
+    FROM orders co
+    CROSS APPLY STRING_SPLIT(
+        COALESCE(CAST(co.extras AS VARCHAR(MAX)), ''), ','
+    ) s
+    JOIN pizza_toppings t
+        ON TRIM(s.value) = t.topping_id
+    JOIN pizza_names pn
+        ON co.pizza_id = pn.pizza_id
+    WHERE TRIM(s.value) <> ''
+)
+SELECT
+    row_id,
+    order_id,
+    customer_id,
+    CAST(pizza_name AS VARCHAR(MAX)) AS pizza_name,
+    STRING_AGG(
+        CAST(topping_name AS VARCHAR(MAX)), ', '
+    ) WITHIN GROUP (
+        ORDER BY CAST(topping_name AS VARCHAR(MAX))
+    ) AS ingredients
+FROM all_ingredients
+GROUP BY
+    order_id,
+    customer_id,
+    pizza_id,
+    row_id,
+    CAST(pizza_name AS VARCHAR(MAX))
+ORDER BY
+    row_id, order_id
+```
+
+**Result:**
+
+| row\_id | order\_id | customer\_id | pizza\_name | ingredients |
+| --- | --- | --- | --- | --- |
+| 1 | 1 | 101 | Meatlovers | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 2 | 2 | 101 | Meatlovers | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 3 | 3 | 102 | Meatlovers | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 4 | 3 | 102 | Vegetarian | Cheese, Mushrooms, Onions, Peppers, Tomato Sauce, Tomatoes |
+| 5 | 4 | 103 | Meatlovers | Bacon, BBQ Sauce, Beef, Chicken, Mushrooms, Pepperoni, Salami |
+| 6 | 4 | 103 | Meatlovers | Bacon, BBQ Sauce, Beef, Chicken, Mushrooms, Pepperoni, Salami |
+| 7 | 4 | 103 | Vegetarian | Mushrooms, Onions, Peppers, Tomato Sauce, Tomatoes |
+| 8 | 5 | 104 | Meatlovers | Bacon, Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 9 | 6 | 101 | Vegetarian | Cheese, Mushrooms, Onions, Peppers, Tomato Sauce, Tomatoes |
+| 10 | 7 | 105 | Vegetarian | Bacon, Cheese, Mushrooms, Onions, Peppers, Tomato Sauce, Tomatoes |
+| 11 | 8 | 102 | Meatlovers | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 12 | 9 | 103 | Meatlovers | Bacon, Bacon, BBQ Sauce, Beef, Chicken, Chicken, Mushrooms, Pepperoni, Salami |
+| 13 | 10 | 104 | Meatlovers | Bacon, BBQ Sauce, Beef, Cheese, Chicken, Mushrooms, Pepperoni, Salami |
+| 14 | 10 | 104 | Meatlovers | Bacon, Bacon, Beef, Cheese, Cheese, Chicken, Pepperoni, Salami |
+
+#### 6. What is the total quantity of each ingredient used in all delivered pizzas sorted by most frequent first?
+
+**Query:**
+
+```
+WITH orders AS (
+    SELECT *,
+        ROW_NUMBER() OVER (
+            ORDER BY order_id, customer_id, pizza_id,
+                     order_time, exclusions, extras
+        ) AS row_id
+    FROM #customer_orders_cleaned co
+    WHERE EXISTS (
+        SELECT 1
+        FROM #runner_orders_cleaned ro
+        WHERE ro.order_id = co.order_id
+          AND ro.cancellation IS NULL
+    )
+),
+all_ingredients AS (
+    SELECT
+        co.row_id,
+        CAST(t.topping_name AS VARCHAR(MAX)) AS topping_name
+    FROM orders co
+    JOIN pizza_recipes r
+        ON co.pizza_id = r.pizza_id
+    CROSS APPLY STRING_SPLIT(
+        CAST(r.toppings AS VARCHAR(MAX)), ','
+    ) s
+    JOIN pizza_toppings t
+        ON TRY_CAST(TRIM(s.value) AS INT) = t.topping_id
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM STRING_SPLIT(
+            COALESCE(CAST(co.exclusions AS VARCHAR(MAX)), ''), ','
+        ) e
+        WHERE TRY_CAST(TRIM(e.value) AS INT) = t.topping_id
+    )
+
+    UNION ALL
+
+    SELECT
+        co.row_id,
+        CAST(t.topping_name AS VARCHAR(MAX)) AS topping_name
+    FROM orders co
+    CROSS APPLY STRING_SPLIT(
+        COALESCE(CAST(co.extras AS VARCHAR(MAX)), ''), ','
+    ) s
+    JOIN pizza_toppings t
+        ON TRY_CAST(TRIM(s.value) AS INT) = t.topping_id
+)
+SELECT
+    topping_name AS ingredient,
+    COUNT(*) AS use_count
+FROM all_ingredients
+GROUP BY topping_name
+ORDER BY use_count DESC, ingredient
+
+```
+
+**Result:**
+| ingredients | use_count |
+| --- | --- |
+| Bacon |	12 |
+| Mushrooms | 11 |
+| Cheese | 10 |
+| Beef | 9 |
+| Chicken | 9 |
+| Pepperoni	| 9 |
+| Salami	| 9 |
+| BBQ Sauce	| 8 |
+| Onions| 3 |
+| Peppers| 3 | 
+| Tomato Sauce	| 3 |
+| Tomatoes|	3 |
+
+> #### :bulb: Important Findings
+>  - Bacon was the most popular extra, added 4 times.
+>  - Cheese was the most common exclusion, removed in 4 pizza orders.
+>  - Bacon (x12), Mushrooms (x11), and Cheese (x10) were the most used ingredients.
+
+
+### D. Pricing and Ratings
+
+#### 1. If a Meat Lovers pizza costs $12 and Vegetarian costs $10 and there were no charges for changes - how much money has Pizza Runner made so far if there are no delivery fees?
+
+**Query:**
+```
+SELECT 
+    SUM(CASE 
+        WHEN pizza_id = 1 THEN 12
+        ELSE 10
+    END) AS total_revenue
+FROM #customer_orders_cleaned AS co
+JOIN #runner_orders_cleaned AS ro
+ON co.order_id = ro.order_id
+WHERE cancellation IS NULL
+```
+
+**Result:**
+
+| total_revenue |
+| --- |
+| 138 |
+
+#### 2. What if there was an additional $1 charge for any pizza extras?
+
+**Query:**
+```
+WITH pizza_prices_cte AS (
+    SELECT 
+    ro.order_id,
+    SUM(CASE 
+        WHEN pizza_name LIKE 'Meatlovers' THEN 12
+        ELSE 10
+    END) AS price
+    FROM #runner_orders_cleaned as ro 
+    JOIN #customer_orders_cleaned as co 
+    ON ro.order_id = co.order_id
+    JOIN pizza_names AS p 
+    ON co.pizza_id = p.pizza_id
+    WHERE cancellation iS NULL
+    GROUP BY ro.order_id
+), extras_cte AS (
+    SELECT 
+        order_id,
+        COUNT(*) AS extra_charge
+    FROM #customer_orders_cleaned
+    CROSS APPLY STRING_SPLIT(extras, ',') AS s
+    WHERE TRIM(extras) <> ''
+    GROUP BY order_id
+)
+SELECT
+    SUM(price) + SUM(extra_charge) AS revenue
+FROM pizza_prices_cte  AS p
+LEFT JOIN extras_cte AS e
+ON p.order_id = e.order_id
+
+```
+
+**Result:**
+| total_revenue |
+| --- |
+| 142 |
+
+#### 3. The Pizza Runner team now wants to add an additional ratings system that allows customers to rate their runner, how would you design an additional table for this new dataset - generate a schema for this new table and insert your own data for ratings for each successful customer order between 1 to 5.
+
+**Query:**
+```
+DROP TABLE IF EXISTS #ratings;
+CREATE TABLE #ratings (
+    rating_id INTEGER,
+    customer_id INTEGER,
+    order_id INTEGER,
+    runner_id INTEGER,
+    rating INTEGER
+)
+
+INSERT INTO #ratings 
+    (rating_id, customer_id, order_id, runner_id, rating )
+    VALUES
+    (1, 101, 1, 1, 4),
+    (2, 101, 2, 1, 5),
+    (3, 102, 3, 1, 4),
+    (4, 103, 4, 2, 3),
+    (5, 104, 5, 3, 5),
+    (6, 105, 7, 2, 5),
+    (7, 102, 8, 2, 4),
+    (8, 104, 10, 1, 5)
+
+SELECT * FROM #ratings
+```
+
+**Result:**
+| rating_id | customer_id | order_id | runner_id | rating |
+|-----------|-------------|----------|-----------|--------|
+| 1         | 101         | 1        | 1         | 4      |
+| 2         | 101         | 2        | 1         | 5      |
+| 3         | 102         | 3        | 1         | 4      |
+| 4         | 103         | 4        | 2         | 3      |
+| 5         | 104         | 5        | 3         | 5      |
+| 6         | 105         | 7        | 2         | 5      |
+| 7         | 102         | 8        | 2         | 4      |
+| 8         | 104         | 10       | 1         | 5      |
+
+#### 4. Using your newly generated table - can you join all of the information together to form a table which has the following information for successful deliveries?
+
+**Query:**
+```
+SELECT
+    ro.order_id,
+    co.customer_id,
+    ro.runner_id,
+    rating,
+    co.order_time,
+    ro.pickup_time,
+    DATEDIFF(minute, co.order_time, ro.pickup_time) AS waiting_time,
+    ro.duration,
+    ROUND(
+        CAST(distance AS FLOAT) / NULLIF(
+            CAST(duration AS FLOAT), 0) * 60,
+        2
+    ) AS speed_kmh,
+    COUNT(pizza_id) AS pizza_count
+FROM #runner_orders_cleaned AS ro
+JOIN #customer_orders_cleaned AS co
+ON co.order_id = ro.order_id
+LEFT JOIN #ratings AS r
+ON r.order_id = ro.order_id
+GROUP BY ro.order_id, co.customer_id, 
+        ro.runner_id,rating, order_time, 
+        pickup_time, duration, distance
+```
+
+**Result:**
+| order_id | customer_id | runner_id | rating | order_time                  | pickup_time         | waiting_time | duration | speed_kmh | pizza_count |
+| :------- | :---------- | :-------- | :----- | :-------------------------- | :------------------ | :----------- | :------- | :-------- | :---------- |
+| 1        | 101         | 1         | 4      | 2020-01-01 18:05:02.0000000 | 2020-01-01 18:15:34 | 10           | 32.00    | 37.5      | 1           |
+| 2        | 101         | 1         | 5      | 2020-01-01 19:00:52.0000000 | 2020-01-01 19:10:54 | 10           | 27.00    | 44.44     | 1           |
+| 3        | 102         | 1         | 4      | 2020-01-02 23:51:23.0000000 | 2020-01-03 00:12:37 | 21           | 20.00    | 40.2      | 2           |
+| 4        | 103         | 2         | 3      | 2020-01-04 13:23:46.0000000 | 2020-01-04 13:53:03 | 30           | 40.00    | 35.1      | 3           |
+| 5        | 104         | 3         | 5      | 2020-01-08 21:00:29.0000000 | 2020-01-08 21:10:57 | 10           | 15.00    | 40        | 1           |
+| 6        | 101         | 3         | NULL   | 2020-01-08 21:03:13.0000000 | NULL                | NULL         | NULL     | NULL      | 1           |
+| 7        | 105         | 2         | 5      | 2020-01-08 21:20:29.0000000 | 2020-01-08 21:30:45 | 10           | 25.00    | 60        | 1           |
+| 8        | 102         | 2         | 4      | 2020-01-09 23:54:33.0000000 | 2020-01-10 00:15:02 | 21           | 15.00    | 93.6      | 1           |
+| 9        | 103         | 2         | NULL   | 2020-01-10 11:22:59.0000000 | NULL                | NULL         | NULL     | NULL      | 1           |
+| 10       | 104         | 1         | 5      | 2020-01-11 18:34:49.0000000 | 2020-01-11 18:50:20 | 16           | 10.00    | 60        | 2           |
+
+#### 5. If a Meat Lovers pizza was $12 and Vegetarian $10 fixed prices with no cost for extras and each runner is paid $0.30 per kilometre traveled - how much money does Pizza Runner have left over after these deliveries?
+
+```
+WITH runner_payment_cte AS(
+    SELECT
+        SUM(distance * 0.30) AS payment
+    FROM #runner_orders_cleaned
+), revenue_cte AS(
+    SELECT 
+        SUM(CASE 
+            WHEN pizza_id = 1 THEN 12
+            ELSE 10
+        END) AS total_revenue
+    FROM #customer_orders_cleaned AS co
+    JOIN #runner_orders_cleaned AS ro
+    ON co.order_id = ro.order_id
+    WHERE cancellation IS NULL
+) SELECT
+    total_revenue - payment AS final_revenue
+    FROM runner_payment_cte
+    CROSS JOIN revenue_cte
+```
+
+| final_revenue |
+| --- |
+| 94.4400 |
+
