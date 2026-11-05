@@ -1,4 +1,7 @@
-# Case Study 3: Foodie Fi
+<div align = center>
+
+# Foodie Fi
+</div>
 
 ## Table of Contents
 - [Problem Statement](#problem-statement)
@@ -80,9 +83,10 @@ When customers churn - they will keep their access until the end of their curren
 | 19          | pro annual    | 2020-08-29 |
 
 </div>
+
 ## Case Study
 
-### A. Customer Journey
+### Customer Journey
 Based off the 8 sample customers provided in the sample from the subscriptions table, write a brief description about each customer’s onboarding journey.
 
 ```
@@ -145,7 +149,7 @@ ORDER BY customer_id, start_date
 - **Customer 19** initially subscribed to the 7-day trial, upgraded to a Pro Monthly plan, then upgraded again to a Pro Annual Month after 2 months.
 
 
-### B. Data Analysis Questions
+### Data Analysis Questions
 
 #### 1. How many customers has Foodie-Fi ever had?
 ```
@@ -201,7 +205,7 @@ GROUP BY s.plan_id, plan_name
 ORDER BY s.plan_id
 ```
 
-*Joined subscriptions and plans table to match the plan ids to plan names for clarity. Filtered using WHERE to show events after 2020. Grouped by the plan_id and plan_name and counted the subscriptions per plan. The final result is ordered by plan_id.*
+*Joined subscriptions and plans table to match the plan ids to plan names for clarity. Filtered using WHERE() to show events after 2020. Grouped by the plan_id and plan_name and counted the subscriptions per plan. The final result is ordered by plan_id.*
 
 | plan_name     | num_events |
 | :------------ | :--------- |
@@ -216,16 +220,17 @@ ORDER BY s.plan_id
 SELECT 
     COUNT(DISTINCT customer_id) AS customer_count,
     CAST(
-        ROUND(COUNT(DISTINCT CASE WHEN plan_id=4 THEN customer_id END)*100.0/
-            COUNT(DISTINCT customer_id),1) 
+        ROUND(COUNT(DISTINCT customer_id)*100.0/
+            (SELECT COUNT(DISTINCT customer_id) FROM subscriptions),1) 
         AS DECIMAL(10,1)) AS churn_pct
 FROM subscriptions
+WHERE plan_id = 4
 ```
-*Counted distinct customer_id to display total customer count. Used conditional expression CASE WHEN to count customer_id only if they have churned as indicated by plan_id = 4. Cast to decimal for clarity.*
+*Limited the results to churned customers using WHERE plan_id = 4. Used COUNT(DISTINCT customer_id) to count unique churned customers and calculate the churn percentage against the total customer count. Applied ROUND() and CAST() for format clarity.*
 
 | customer_count | churn_pct |
 | ---- | ---- |
-| 1000 | 30.7 |
+| 307 | 30.7 |
 
 #### 5. How many customers have churned straight after the free trial - what percentage is this rounded to whole number?
 ```
@@ -313,6 +318,7 @@ WHERE plan_latest_n = 1
 GROUP BY rp.plan_id, p.plan_name
 ORDER BY rp.plan_id
 ```
+*A CTE (ranked_plans) was used to assign ranks to subscription events for each customer according to its start_date, from latest to oldest, until Dec. 31, 2020. This table is joined with plans to get the plan names, filtered to get latest plans for each customer (plan_latest_n = 1) and grouped by plan to get the count and percentage.*
 
 | plan_name     | count_after_trial | pct |
 | :------------ | :---------------- | :-- |
@@ -325,12 +331,26 @@ ORDER BY rp.plan_id
 #### 8. How many customers have upgraded to an annual plan in 2020?
 
 ```
+WITH next_plan_cte AS (
 SELECT
-    COUNT(DISTINCT customer_id) AS num_upgraded
+    customer_id,
+    plan_id,
+    start_date,
+    LEAD(plan_id) OVER (
+        PARTITION BY customer_id
+        ORDER BY start_date ASC
+    ) AS next_plan_id,
+        LEAD(start_date) OVER (
+            PARTITION BY customer_id
+            ORDER BY start_date ASC
+        ) AS upgrade_date
 FROM subscriptions
-WHERE YEAR(start_date) = 2020 AND plan_id = 3
+) SELECT
+    COUNT(DISTINCT customer_id) AS upgraded_customers
+FROM next_plan_cte
+WHERE next_plan_id = 3 AND YEAR(upgrade_date) = 2020
 ```
-| num_upgraded |
+| upgraded_customers |
 | --- |
 | 195 |
 
@@ -396,14 +416,34 @@ WITH customer_plans_cte AS (
             ORDER BY start_date ASC
         ) AS previous_plan_id
     FROM subscriptions
-    WHERE YEAR(start_date) = 2020
 )
 SELECT
-    COUNT(*) AS downgraded_plans
+    COUNT(DISTINCT customer_id) AS downgraded_plans
 FROM customer_plans_cte
 WHERE plan_id < previous_plan_id
+AND YEAR(start_date) = 2020
 ```
 
 | downgraded_plans |
 | --- |
 | 0 |
+
+### Challenge: Payments Table
+
+The Foodie-Fi team wants you to create a new payments table for the year 2020 that includes amounts paid by each customer in the subscriptions table with the following requirements:
+
+- monthly payments always occur on the same day of month as the original start_date of any monthly paid plan
+- upgrades from basic to monthly or pro plans are reduced by the current paid amount in that month and start immediately
+- upgrades from pro monthly to pro annual are paid at the end of the current billing period and also starts at the end of the month period
+- once a customer churns they will no longer make payments
+
+### Outside the Box Questions
+
+#### 1. How would you calculate the rate of growth for Foodie-Fi?
+
+#### 2. What key metrics would you recommend Foodie-Fi management to track over time to assess performance of their overall business?
+
+
+What are some key customer journeys or experiences that you would analyse further to improve customer retention?
+If the Foodie-Fi team were to create an exit survey shown to customers who wish to cancel their subscription, what questions would you include in the survey?
+What business levers could the Foodie-Fi team use to reduce the customer churn rate? How would you validate the effectiveness of your ideas?

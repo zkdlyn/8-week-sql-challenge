@@ -51,10 +51,11 @@ SELECT COUNT(*) AS total, COUNT(DISTINCT customer_id) AS unique_c FROM subscript
 SELECT 
     COUNT(DISTINCT customer_id) AS customer_count,
     CAST(
-        ROUND(COUNT(DISTINCT CASE WHEN plan_id=4 THEN customer_id END)*100.0/
-            COUNT(DISTINCT customer_id),1) 
+        ROUND(COUNT(DISTINCT customer_id)*100.0/
+            (SELECT COUNT(DISTINCT customer_id) FROM subscriptions),1) 
         AS DECIMAL(10,1)) AS churn_pct
 FROM subscriptions
+WHERE plan_id = 4
 
 --How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
 WITH customer_plans_cte AS(
@@ -122,10 +123,25 @@ GROUP BY rp.plan_id, p.plan_name
 ORDER BY rp.plan_id
 
 --How many customers have upgraded to an annual plan in 2020?
+
+WITH next_plan_cte AS (
 SELECT
-    COUNT(DISTINCT customer_id) AS num_upgraded
+    customer_id,
+    plan_id,
+    start_date,
+    LEAD(plan_id) OVER (
+        PARTITION BY customer_id
+        ORDER BY start_date ASC
+    ) AS next_plan_id,
+        LEAD(start_date) OVER (
+            PARTITION BY customer_id
+            ORDER BY start_date ASC
+        ) AS upgrade_date
 FROM subscriptions
-WHERE YEAR(start_date) = 2020 AND plan_id = 3
+) SELECT
+    COUNT(DISTINCT customer_id) AS upgraded_customers
+FROM next_plan_cte
+WHERE next_plan_id = 3 AND YEAR(upgrade_date) = 2020
 
 --How many days on average does it take for a customer to upgrade to an annual plan from the day they join Foodie-Fi?
 
@@ -165,11 +181,29 @@ WITH customer_plans_cte AS (
             ORDER BY start_date ASC
         ) AS previous_plan_id
     FROM subscriptions
-    WHERE YEAR(start_date) = 2020
 )
 SELECT
-    COUNT(*) AS downgraded_plans
+    COUNT(DISTINCT customer_id) AS downgraded_plans
 FROM customer_plans_cte
 WHERE plan_id < previous_plan_id
+AND YEAR(start_date) = 2020
+
+-- C
+SELECT 
+	s.customer_id,
+	s.plan_id,
+	p.plan_name,
+	s.start_date AS payment_date,
+	p.price AS amount,
+	ROW_NUMBER() OVER(
+            PARTITION BY customer_id
+            ORDER BY start_date ASC
+        ) AS payment_order
+FROM subscriptions AS s
+JOIN plans AS p
+ON s.plan_id = p.plan_id
+WHERE s.plan_id <> 0
+ORDER BY s.customer_id
 
 
+-- D
