@@ -1,18 +1,18 @@
 <div align = center>
 
-# 8 Week SQL Challenge
+# :star: 8 Week SQL Challenge :star:
 
 </div>
 
 This repository contains my solutions to Data With Danny’s [8-Week SQL Challenge](https://8weeksqlchallenge.com/), covering eight real-world business case studies. Each case study includes SQL solutions, analysis, and key insights derived from the data.
 
 
-## Tools
+## :computer: Tools
 - MS SQL Server
 - SQL Server Management Studio
 - Git/GitHub
 
-## Case Studies
+## :file_folder: Case Studies
 
 | No. | Case Study | Domain | Key Focus |
 | :---: | ---- | ----| ---- |
@@ -22,13 +22,16 @@ This repository contains my solutions to Data With Danny’s [8-Week SQL Challen
 | 4 | [Data Bank](#case-study-4-data-bank) | Digital Banking | |
  
 
+## :pushpin: Highlights
 
-## Highlights
-
-### Danny's Diner
+### :ramen: Danny's Diner
 
 #### Overview:
 Danny's Diner wants to better understand its customers, purchasing behavior, and visiting patterns to make informed business decisions. Using insights gained on these data, he would evaluate the effectiveness of the existing customer loyalty program.
+
+
+[![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white)](https://8weeksqlchallenge.com/case-study-1/)
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white)](./Case%20Study%201%20-%20Danny's%20Diner/README.md)
 
 #### Business Questions:
 1. What is the total amount each customer spent at the restaurant?
@@ -52,17 +55,16 @@ Danny's Diner wants to better understand its customers, purchasing behavior, and
 - Membership behavior showed that customers tend to make a few purchases before joining the loyalty program. After joining, customers continue to make purchases, indicating sustained engagement with the business. 
   - *Danny may seek to encourage first-time customers to join the loyalty program through introductory promotions or discounts*.
 
+------
 
-#### Project Files:
 
-
-- [Read Full Case](https://8weeksqlchallenge.com/case-study-1/) 
-- [View My Solution](./Case%20Study%201%20-%20Danny's%20Diner/README.md)
-
-### Pizza Runner
+### :pizza: Pizza Runner
 
 #### Overview:
 Danny launched Pizza Runner, a pizza delivery business inspired by the idea of combining retro-style pizza with an app-based delivery service. He recruited runners to deliver orders and developed a mobile app to manage customer orders, creating an opportunity to analyze sales, delivery operations, and business performance.
+
+[![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)](https://8weeksqlchallenge.com/case-study-2/) 
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](./Case%20Study%202%20-%20Pizza%20Runner/README.md)
 
 #### Business Questions:
 This case study is divided into several key areas of focus:
@@ -82,15 +84,16 @@ This case study is divided into several key areas of focus:
 - Pizza Runner generated $138 in revenue, which increased to $142 with additional charges for extras, while retaining $94.44 after runner delivery expenses.
   - *They can explore additional revenue opportunities through upselling extras while monitoring delivery costs to improve profitability.*
 
-#### Project Files:
-- [Read Full Case](https://8weeksqlchallenge.com/case-study-2/) 
-- [View My Solution](./Case%20Study%202%20-%20Pizza%20Runner/README.md)
+---
 
-### Foodie-Fi
+### :avocado: Foodie-Fi
 
 #### Overview:
 
 Danny launched his new startup Foodie-Fi, a streaming platform for food-related content, selling monthly and annual subscriptions. Using subscription data, he wants to gain insights into customer behaviour and subscription trends to support data-driven investment decisions and feature improvements. 
+
+[![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)](https://8weeksqlchallenge.com/case-study-3/) 
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](./Case%20Study%203%20-%20Foodie%20Fi/README.md)
 
 #### Business Questions:
 This case study is split into an initial data understanding question before diving straight into data analysis questions.
@@ -98,12 +101,12 @@ This case study is split into an initial data understanding question before divi
 Data analysis questions cover 
 
 
-[Read Full Case](https://8weeksqlchallenge.com/case-study-3/) \
-[View My Solution](./Case%20Study%203%20-%20Foodie%20Fi/README.md)
+---
 
-## Case Study 4: Data Bank
 
-**Domain: Digital Banking**
+### :bar_chart: Data Bank
+
+#### Overview:
 
 Data Bank runs just like any other digital bank - but it isn’t only for banking activities, they also have the world’s most secure distributed data storage platform!
 
@@ -113,5 +116,11 @@ The management team at Data Bank want to increase their total customer base - bu
 
 This case study is all about calculating metrics, growth and helping the business analyse their data in a smart way to better forecast and plan for their future developments!
 
-[Read Full Case](https://8weeksqlchallenge.com/case-study-4/) \
-[View My Solution](./Case%20Study%204%20-%20Data%20Bank/README.md)
+[![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)](https://8weeksqlchallenge.com/case-study-4/) 
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](./Case%20Study%204%20-%20Data%20Bank/README.md)
+
+
+
+### :shopping_cart: Data Mart 
+[![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)]()
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)]()
