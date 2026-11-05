@@ -277,9 +277,29 @@ ORDER BY customer_id;
 ### Q9) If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
 **Query:**
 ```
+WITH points_item AS (
+    SELECT *,
+    CASE 
+    WHEN product_name = 'sushi' THEN 20
+    ELSE 10
+    END AS multiplier
+    FROM menu
+) 
+SELECT
+    s.customer_id,
+    SUM(p.price*p.multiplier) AS total_points
+FROM sales as s
+JOIN points_item as p
+ON s.product_id = p.product_id
+GROUP BY s.customer_id
 ```
 
 **Result:**
+| customer_id | total_points |
+|---|---|
+|A | 860 |
+|B | 940 |
+|C | 360 |
 
 ### Q10) In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
 
@@ -413,10 +433,12 @@ FROM ranked_members
 
 ## Insights and Recommendations
 
-:exclamation:**Ramen is the most popular item on the menu**, accounting for 8 out of 15 purchases. It is a favorite by both members (A and B) and non-members (C). *Danny should keep ramen on the menu and may consider expanding the offering by introducing different ramen variations.*
+:exclamation:**Ramen is the most popular item on the menu**, accounting for 8 out of 15 purchases. It is a favorite by both members (A and B) and non-members (C). *Danny should keep ramen on the menu and consider expanding the offering by introducing different ramen variations.*
 
 :exclamation:**Curry, the most expensive product, was only purchased 4 times**, which may indicate low demand for its higher price point. *Danny may want to review its pricing, portion, or overall positioning before deciding whether to keep it on the menu.* 
 
 :exclamation:**Membership behavior showed that customers tend to make a few purchases before joining the loyalty program**. After joining, customers continue to make purchases, indicating sustained engagement with the business. *Danny may seek to encourage first-time customers to join the loyalty program through introductory promotions or discounts.*
 
 
+## Limitations
+:warning:
