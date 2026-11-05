@@ -1152,3 +1152,9 @@ WITH runner_payment_cte AS(
 | --- |
 | 94.4400 |
 
+> #### :bulb: Important Findings
+> - Pizza Runner generated a total revenue of $138, based on fixed prices of $12 for Meat Lovers and $10 for Vegetarian.
+> - Revenue was increased to $142 if charges of $1 per extra is introduced.
+> - Runner payments amounted to $43.56, accounting for 31.57% of the original revenue 
+
+
