@@ -30,8 +30,8 @@ This repository contains my solutions to Data With Danny’s [8-Week SQL Challen
 Danny's Diner wants to better understand its customers, purchasing behavior, and visiting patterns to make informed business decisions. Using insights gained on these data, he would evaluate the effectiveness of the existing customer loyalty program.
 
 
-[![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white)](https://8weeksqlchallenge.com/case-study-1/)
-[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white)](./Case%20Study%201%20-%20Danny's%20Diner/README.md)
+[![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)](https://8weeksqlchallenge.com/case-study-1/)
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](./Case%20Study%201%20-%20Danny's%20Diner/README.md)
 
 #### Business Questions:
 1. What is the total amount each customer spent at the restaurant?
