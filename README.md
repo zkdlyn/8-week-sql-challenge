@@ -31,7 +31,7 @@ Danny's Diner wants to better understand its customers, purchasing behavior, and
 
 
 [![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)](https://8weeksqlchallenge.com/case-study-1/)
-[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](./Case%20Study%201%20-%20Danny's%20Diner/README.md)
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](/Case%20Study%201%20-%20Danny's%20Diner/README.md)
 
 #### Business Questions:
 1. What is the total amount each customer spent at the restaurant?
@@ -64,7 +64,7 @@ Danny's Diner wants to better understand its customers, purchasing behavior, and
 Danny launched Pizza Runner, a pizza delivery business inspired by the idea of combining retro-style pizza with an app-based delivery service. He recruited runners to deliver orders and developed a mobile app to manage customer orders, creating an opportunity to analyze sales, delivery operations, and business performance.
 
 [![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)](https://8weeksqlchallenge.com/case-study-2/) 
-[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](./Case%20Study%202%20-%20Pizza%20Runner/README.md)
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](/Case%20Study%202%20-%20Pizza%20Runner/README.md)
 
 #### Business Questions:
 This case study is divided into several key areas of focus:
@@ -93,7 +93,7 @@ This case study is divided into several key areas of focus:
 Danny launched his new startup Foodie-Fi, a streaming platform for food-related content, selling monthly and annual subscriptions. Using subscription data, he wants to gain insights into customer behaviour and subscription trends to support data-driven investment decisions and feature improvements. 
 
 [![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)](https://8weeksqlchallenge.com/case-study-3/) 
-[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](./Case%20Study%203%20-%20Foodie%20Fi/README.md)
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](/Case%20Study%203%20-%20Foodie%20Fi/README.md)
 
 #### Business Questions:
 This case study is split into an initial data understanding question before diving straight into data analysis questions.
@@ -117,10 +117,10 @@ The management team at Data Bank want to increase their total customer base - bu
 This case study is all about calculating metrics, growth and helping the business analyse their data in a smart way to better forecast and plan for their future developments!
 
 [![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)](https://8weeksqlchallenge.com/case-study-4/) 
-[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](./Case%20Study%204%20-%20Data%20Bank/README.md)
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](/Case%20Study%204%20-%20Data%20Bank/README.md)
 
 
 
 ### :shopping_cart: Data Mart 
 [![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)]()
-[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)]()
+[![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](/Case%20Study%204%20-%20Data%20Bank/README.md)
