@@ -108,16 +108,12 @@ Data analysis questions cover
 
 #### Overview:
 
-Data Bank runs just like any other digital bank - but it isn’t only for banking activities, they also have the world’s most secure distributed data storage platform!
-
-Customers are allocated cloud data storage limits which are directly linked to how much money they have in their accounts. There are a few interesting caveats that go with this business model, and this is where the Data Bank team need your help!
-
-The management team at Data Bank want to increase their total customer base - but also need some help tracking just how much data storage their customers will need.
-
-This case study is all about calculating metrics, growth and helping the business analyse their data in a smart way to better forecast and plan for their future developments!
+Data Bank combines traditional banking services with cloud data storage. Unlike other digital banks, it allocates cloud storage limits based on how much a customer has in their account. The management team at Data Bank needs to analyze customer banking and transaction data to understand customer growth, account balances, and cloud storage requirements. 
 
 [![Read Full Case](https://img.shields.io/badge/Read%20Full%20Case-2962FF?style=for-the-badge&logo=readthedocs&logoColor=white&color=red)](https://8weeksqlchallenge.com/case-study-4/) 
 [![View My Solution](https://img.shields.io/badge/View%20My%20Solution-2EA44F?style=for-the-badge&logo=github&logoColor=white&color=blue)](/Case%20Study%204%20-%20Data%20Bank/README.md)
+
+#### Case Study Questions
 
 
 
